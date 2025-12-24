@@ -7,13 +7,13 @@ import math
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg  # ADDED RigidObjectCfg
-from isaaclab.envs import ManagerBasedRLEnvCfg
+from isaaclab.envs import ManagerBasedEnvCfg
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
-from isaaclab.managers import RewardTermCfg as RewTerm
+#from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
-from isaaclab.managers import TerminationTermCfg as DoneTerm
+#from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
@@ -179,71 +179,29 @@ class EventCfg:
     )
 
 
-@configclass
-class RewardsCfg:
-    """Reward terms for the MDP."""
-
-    # Alive bonus
-    alive = RewTerm(func=mdp.is_alive, weight=0.1)
-
-    # Reaching reward - distance from end effector to block
-    reaching_block = RewTerm(
-        func=mdp.position_command_error_tanh,
-        weight=1.0,
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=["joint6_flange"]),
-            "command_name": "block_pose",
-            "std": 0.1,
-        },
-    )
-
-    # Penalize large actions
-    action_rate = RewTerm(
-        func=mdp.action_rate_l2,
-        weight=-0.01,
-    )
-
-    # Penalize large joint velocities
-    joint_vel = RewTerm(
-        func=mdp.joint_vel_l2,
-        weight=-0.001,
-        params={"asset_cfg": SceneEntityCfg("robot")},
-    )
-
-
-@configclass
-class TerminationsCfg:
-    """Termination terms for the MDP."""
-
-    # Timeout
-    time_out = DoneTerm(func=mdp.time_out, time_out=True)
-
-
 ##
 # Environment configuration
 ##
 
 @configclass
-class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):
+class Mycobot2802EnvCfg(ManagerBasedEnvCfg):  # CHANGED: No RL!
     """Configuration for the myCobot 280 manipulation environment."""
 
     # Scene settings
-    scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=4096, env_spacing=2.0)
+    scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=1, env_spacing=2.0)  # CHANGED: 1 env for teleoperation
     
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     events: EventCfg = EventCfg()
     
-    # MDP settings
-    rewards: RewardsCfg = RewardsCfg()
-    terminations: TerminationsCfg = TerminationsCfg()
+    # NO rewards or terminations - removed!
 
     def __post_init__(self) -> None:
         """Post initialization."""
         # General settings
         self.decimation = 2
-        self.episode_length_s = 20.0
+        # No episode_length_s needed - removed!
         
         # Viewer settings
         self.viewer.eye = (1.5, 1.5, 1.0)
