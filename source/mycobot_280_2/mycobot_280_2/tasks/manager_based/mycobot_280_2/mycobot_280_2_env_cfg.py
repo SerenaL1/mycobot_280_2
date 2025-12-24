@@ -6,7 +6,7 @@
 import math
 
 import isaaclab.sim as sim_utils
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg  # ADDED RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -18,12 +18,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 
 from . import mdp
-
-##
-# Pre-defined configs
-##
-
-from isaaclab_assets.robots.cartpole import CARTPOLE_CFG  # isort:skip
+from .mycobot_280_2 import MYCOBOT_280_CFG
 
 
 ##
@@ -33,7 +28,7 @@ from isaaclab_assets.robots.cartpole import CARTPOLE_CFG  # isort:skip
 
 @configclass
 class Mycobot2802SceneCfg(InteractiveSceneCfg):
-    """Configuration for a cart-pole scene."""
+    """Configuration for a myCobot 280 manipulation scene."""
 
     # ground plane
     ground = AssetBaseCfg(
@@ -42,12 +37,65 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
     )
 
     # robot
-    robot: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+    robot: ArticulationCfg = MYCOBOT_280_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
-    # lights
+    # Table
+    table = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Table",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.8, 0.6, 0.7),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=50.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.7, 0.6)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.4, 0.0, 0.35)),
+    )
+
+    # Tray for blocks
+    tray = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Tray",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.12, 0.12, 0.02),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.2),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.2, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.35, 0.0, 0.71)),
+    )
+
+    # Kohs Block
+    kohs_block = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/KohsBlock",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.015),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.9, 0.1, 0.1)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                static_friction=0.5,
+                dynamic_friction=0.4,
+                restitution=0.1,
+            ),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(
+            pos=(0.35, 0.0, 0.7325),
+            rot=(1.0, 0.0, 0.0, 0.0),
+        ),
+    )
+
+    # Lights
     dome_light = AssetBaseCfg(
         prim_path="/World/DomeLight",
         spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
+    )
+
+    distant_light = AssetBaseCfg(
+        prim_path="/World/DistantLight",
+        spawn=sim_utils.DistantLightCfg(color=(0.9, 0.9, 0.9), intensity=600.0),
+        init_state=AssetBaseCfg.InitialStateCfg(rot=(0.738, 0.477, 0.477, 0.0)),
     )
 
 
@@ -55,12 +103,17 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
 # MDP settings
 ##
 
-
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=["slider_to_cart"], scale=100.0)
+    # Joint position control for the 6 DOF arm
+    arm_action = mdp.JointPositionActionCfg(
+        asset_name="robot",
+        joint_names=["joint2_to_joint1", "joint3_to_joint2", "joint4_to_joint3", 
+                     "joint5_to_joint4", "joint6_to_joint5", "joint6output_to_joint6"],
+        scale=0.5,
+    )
 
 
 @configclass
@@ -71,15 +124,27 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # observation terms (order preserved)
-        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+        # Robot joint positions and velocities
+        joint_pos = ObsTerm(func=mdp.joint_pos_rel, params={"asset_cfg": SceneEntityCfg("robot")})
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel, params={"asset_cfg": SceneEntityCfg("robot")})
+        
+        # End effector position
+        ee_pos = ObsTerm(
+            func=mdp.root_pos_w,
+            params={"asset_cfg": SceneEntityCfg("robot", body_names=["joint6_flange"])},
+        )
+        
+        # Block position
+        block_pos = ObsTerm(
+            func=mdp.root_pos_w,
+            params={"asset_cfg": SceneEntityCfg("kohs_block")},
+        )
 
         def __post_init__(self) -> None:
             self.enable_corruption = False
             self.concatenate_terms = True
 
-    # observation groups
+    # Observation groups
     policy: PolicyCfg = PolicyCfg()
 
 
@@ -87,24 +152,29 @@ class ObservationsCfg:
 class EventCfg:
     """Configuration for events."""
 
-    # reset
-    reset_cart_position = EventTerm(
-        func=mdp.reset_joints_by_offset,
+    # Reset robot to home position
+    reset_robot_joints = EventTerm(
+        func=mdp.reset_joints_by_scale,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]),
-            "position_range": (-1.0, 1.0),
-            "velocity_range": (-0.5, 0.5),
+            "asset_cfg": SceneEntityCfg("robot"),
+            "position_range": (0.9, 1.1),
+            "velocity_range": (0.0, 0.0),
         },
     )
 
-    reset_pole_position = EventTerm(
-        func=mdp.reset_joints_by_offset,
+    # Reset block position (with small randomization)
+    reset_block_position = EventTerm(
+        func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]),
-            "position_range": (-0.25 * math.pi, 0.25 * math.pi),
-            "velocity_range": (-0.25 * math.pi, 0.25 * math.pi),
+            "asset_cfg": SceneEntityCfg("kohs_block"),
+            "pose_range": {
+                "x": (0.33, 0.37),
+                "y": (-0.02, 0.02),
+                "z": (0.7325, 0.7325),
+            },
+            "velocity_range": {},
         },
     )
 
@@ -113,27 +183,31 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # (1) Constant running reward
-    alive = RewTerm(func=mdp.is_alive, weight=1.0)
-    # (2) Failure penalty
-    terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
-    # (3) Primary task: keep pole upright
-    pole_pos = RewTerm(
-        func=mdp.joint_pos_target_l2,
-        weight=-1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]), "target": 0.0},
+    # Alive bonus
+    alive = RewTerm(func=mdp.is_alive, weight=0.1)
+
+    # Reaching reward - distance from end effector to block
+    reaching_block = RewTerm(
+        func=mdp.position_command_error_tanh,
+        weight=1.0,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=["joint6_flange"]),
+            "command_name": "block_pose",
+            "std": 0.1,
+        },
     )
-    # (4) Shaping tasks: lower cart velocity
-    cart_vel = RewTerm(
-        func=mdp.joint_vel_l1,
+
+    # Penalize large actions
+    action_rate = RewTerm(
+        func=mdp.action_rate_l2,
         weight=-0.01,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"])},
     )
-    # (5) Shaping tasks: lower pole angular velocity
-    pole_vel = RewTerm(
-        func=mdp.joint_vel_l1,
-        weight=-0.005,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"])},
+
+    # Penalize large joint velocities
+    joint_vel = RewTerm(
+        func=mdp.joint_vel_l2,
+        weight=-0.001,
+        params={"asset_cfg": SceneEntityCfg("robot")},
     )
 
 
@@ -141,40 +215,46 @@ class RewardsCfg:
 class TerminationsCfg:
     """Termination terms for the MDP."""
 
-    # (1) Time out
+    # Timeout
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # (2) Cart out of bounds
-    cart_out_of_bounds = DoneTerm(
-        func=mdp.joint_pos_out_of_manual_limit,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]), "bounds": (-3.0, 3.0)},
-    )
 
 
 ##
 # Environment configuration
 ##
 
-
 @configclass
 class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):
+    """Configuration for the myCobot 280 manipulation environment."""
+
     # Scene settings
-    scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=4096, env_spacing=4.0)
+    scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=4096, env_spacing=2.0)
+    
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     events: EventCfg = EventCfg()
+    
     # MDP settings
     rewards: RewardsCfg = RewardsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
 
-    # Post initialization
     def __post_init__(self) -> None:
         """Post initialization."""
-        # general settings
+        # General settings
         self.decimation = 2
-        self.episode_length_s = 5
-        # viewer settings
-        self.viewer.eye = (8.0, 0.0, 5.0)
-        # simulation settings
-        self.sim.dt = 1 / 120
+        self.episode_length_s = 20.0
+        
+        # Viewer settings
+        self.viewer.eye = (1.5, 1.5, 1.0)
+        self.viewer.lookat = (0.4, 0.0, 0.5)
+        
+        # Simulation settings
+        self.sim.dt = 1.0 / 120.0
         self.sim.render_interval = self.decimation
+        self.sim.physics_material = sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        )
