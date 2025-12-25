@@ -1,27 +1,26 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
-# All rights reserved.
-#
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gymnasium as gym
 
-#from . import agents
-
 ##
-# Register Gym environments.
+# Register Gym environments
 ##
-
 
 gym.register(
     id="Template-Mycobot-280-IK-Rel-v0",
     entry_point="isaaclab.envs:ManagerBasedEnv",
     disable_env_checker=True,
     kwargs={
-        "env_cfg_entry_point": f"{__name__}.mycobot_280_ik_rel_env_cfg:Mycobot2802IKRelEnvCfg",
- #       "rl_games_cfg_entry_point": f"{agents.__name__}:rl_games_ppo_cfg.yaml",
- #       "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:PPORunnerCfg",
- #       "skrl_amp_cfg_entry_point": f"{agents.__name__}:skrl_amp_cfg.yaml",
-  #      "skrl_cfg_entry_point": f"{agents.__name__}:skrl_ppo_cfg.yaml",
-  #      "sb3_cfg_entry_point": f"{agents.__name__}:sb3_ppo_cfg.yaml",
+        "env_cfg_entry_point": "mycobot_280_2.tasks.manager_based.mycobot_280_2.config.mycobot_280_ik_rel_env_cfg:MycobotIKRelEnvCfg",
+    },
+)
+
+gym.register(
+    id="Template-Mycobot-280-Joint-v0",
+    entry_point="isaaclab.envs:ManagerBasedEnv",
+    disable_env_checker=True,
+    kwargs={
+        "env_cfg_entry_point": "mycobot_280_2.tasks.manager_based.mycobot_280_2.config.mycobot_280_joint_pos_env_cfg:MycobotEnvCfg",
     },
 )

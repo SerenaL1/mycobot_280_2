@@ -1,58 +1,46 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
-# All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
-import math
+from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg  # ADDED RigidObjectCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedEnvCfg
-from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
-#from isaaclab.managers import RewardTermCfg as RewTerm
-from isaaclab.managers import SceneEntityCfg
-#from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.sensors.frame_transformer.frame_transformer_cfg import FrameTransformerCfg
+from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
-
+from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
+from isaaclab.managers import TerminationTermCfg as DoneTerm 
 from . import mdp
-from .mycobot_280_2 import MYCOBOT_280_CFG
-
 
 ##
 # Scene definition
 ##
 
-
 @configclass
 class Mycobot2802SceneCfg(InteractiveSceneCfg):
-    """Configuration for a myCobot 280 manipulation scene."""
+    """Configuration for the MyCobot 280 scene with robot and objects."""
 
-    # ground plane
-    ground = AssetBaseCfg(
-        prim_path="/World/ground",
-        spawn=sim_utils.GroundPlaneCfg(size=(100.0, 100.0)),
+    # robots: will be populated by child env cfg
+    robot: ArticulationCfg = MISSING
+    # end-effector sensor: will be populated by child env cfg
+    ee_frame: FrameTransformerCfg = MISSING
+
+    # plane
+    plane = AssetBaseCfg(
+        prim_path="/World/GroundPlane",
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0, 0, -1.05]),
+        spawn=GroundPlaneCfg(),
     )
-
-    # robot
-    robot: ArticulationCfg = MYCOBOT_280_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
     # Table
     table = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Table",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.8, 0.6, 0.7),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
-            mass_props=sim_utils.MassPropertiesCfg(mass=50.0),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.7, 0.6)),
-        ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.4, 0.0, 0.35)),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.5, 0, 0], rot=[0.707, 0, 0, 0.707]),
+        spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
     )
 
-    # Tray for blocks
+    # Tray for blocks (YOU HAVE THIS!)
     tray = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Tray",
         spawn=sim_utils.CuboidCfg(
@@ -65,37 +53,10 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.35, 0.0, 0.71)),
     )
 
-    # Kohs Block
-    kohs_block = AssetBaseCfg(
-        prim_path="{ENV_REGEX_NS}/KohsBlock",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.015),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.9, 0.1, 0.1)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.5,
-                dynamic_friction=0.4,
-                restitution=0.1,
-            ),
-        ),
-        init_state=AssetBaseCfg.InitialStateCfg(
-            pos=(0.35, 0.0, 0.7325),
-            rot=(1.0, 0.0, 0.0, 0.0),
-        ),
-    )
-
-    # Lights
-    dome_light = AssetBaseCfg(
-        prim_path="/World/DomeLight",
-        spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
-    )
-
-    distant_light = AssetBaseCfg(
-        prim_path="/World/DistantLight",
-        spawn=sim_utils.DistantLightCfg(color=(0.9, 0.9, 0.9), intensity=600.0),
-        init_state=AssetBaseCfg.InitialStateCfg(rot=(0.738, 0.477, 0.477, 0.0)),
+    # lights
+    light = AssetBaseCfg(
+        prim_path="/World/light",
+        spawn=sim_utils.DomeLightCfg(color=(0.75, 0.75, 0.75), intensity=3000.0),
     )
 
 
@@ -107,13 +68,8 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    # Joint position control for the 6 DOF arm
-    arm_action = mdp.JointPositionActionCfg(
-        asset_name="robot",
-        joint_names=["joint2_to_joint1", "joint3_to_joint2", "joint4_to_joint3", 
-                     "joint5_to_joint4", "joint6_to_joint5", "joint6output_to_joint6"],
-        scale=0.5,
-    )
+    # Will be set by child env cfg
+    arm_action: mdp.JointPositionActionCfg = MISSING
 
 
 @configclass
@@ -124,21 +80,16 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # Robot joint positions and velocities
-        joint_pos = ObsTerm(func=mdp.joint_pos_rel, params={"asset_cfg": SceneEntityCfg("robot")})
-        joint_vel = ObsTerm(func=mdp.joint_vel_rel, params={"asset_cfg": SceneEntityCfg("robot")})
+        # Robot joint state
+        joint_pos = ObsTerm(func=mdp.joint_pos_rel)
+        joint_vel = ObsTerm(func=mdp.joint_vel_rel)
         
-        # End effector position
-        ee_pos = ObsTerm(
-            func=mdp.root_pos_w,
-            params={"asset_cfg": SceneEntityCfg("robot", body_names=["joint6_flange"])},
-        )
+        # End-effector state
+  #      ee_pos = ObsTerm(func=mdp.ee_frame_pos)
+  #      ee_quat = ObsTerm(func=mdp.ee_frame_quat)
         
-        # Block position
-        block_pos = ObsTerm(
-            func=mdp.root_pos_w,
-            params={"asset_cfg": SceneEntityCfg("kohs_block")},
-        )
+        # Last action
+        actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self) -> None:
             self.enable_corruption = False
@@ -147,72 +98,48 @@ class ObservationsCfg:
     # Observation groups
     policy: PolicyCfg = PolicyCfg()
 
+@configclass
+class TerminationsCfg:
+    """Termination terms for the MDP."""
+    
+    time_out = DoneTerm(func=mdp.time_out, time_out=True)
+
 
 @configclass
-class EventCfg:
-    """Configuration for events."""
-
-    # Reset robot to home position
-    reset_robot_joints = EventTerm(
-        func=mdp.reset_joints_by_scale,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("robot"),
-            "position_range": (0.9, 1.1),
-            "velocity_range": (0.0, 0.0),
-        },
-    )
-
-    # Reset block position (with small randomization)
-    reset_block_position = EventTerm(
-        func=mdp.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("kohs_block"),
-            "pose_range": {
-                "x": (0.33, 0.37),
-                "y": (-0.02, 0.02),
-                "z": (0.7325, 0.7325),
-            },
-            "velocity_range": {},
-        },
-    )
-
-
-##
-# Environment configuration
-##
-
-@configclass
-class Mycobot2802EnvCfg(ManagerBasedEnvCfg):  # CHANGED: No RL!
-    """Configuration for the myCobot 280 manipulation environment."""
+class Mycobot2802EnvCfg(ManagerBasedEnvCfg):
+    """Base configuration for the MyCobot 280 manipulation environment."""
 
     # Scene settings
-    scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=1, env_spacing=2.0)  # CHANGED: 1 env for teleoperation
+    scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=1, env_spacing=2.0, replicate_physics=False)
     
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
-    events: EventCfg = EventCfg()
-    
-    # NO rewards or terminations - removed!
+    terminations: TerminationsCfg = TerminationsCfg()
 
-    def __post_init__(self) -> None:
+    # No MDP managers for base config
+    commands = None
+    rewards = None
+    events = None
+  #  terminations = None
+    curriculum = None
+
+    def __post_init__(self):
         """Post initialization."""
-        # General settings
+        # general settings
         self.decimation = 2
-        # No episode_length_s needed - removed!
+        self.episode_length_s = 20.0
         
-        # Viewer settings
+        # viewer settings
         self.viewer.eye = (1.5, 1.5, 1.0)
         self.viewer.lookat = (0.4, 0.0, 0.5)
         
-        # Simulation settings
+        # simulation settings
         self.sim.dt = 1.0 / 120.0
         self.sim.render_interval = self.decimation
-        self.sim.physics_material = sim_utils.RigidBodyMaterialCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=1.0,
-            dynamic_friction=1.0,
-        )
+        
+        # physics settings
+        self.sim.physx.bounce_threshold_velocity = 0.2
+        self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
+        self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024
+        self.sim.physx.friction_correlation_distance = 0.00625
