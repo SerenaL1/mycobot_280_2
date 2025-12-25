@@ -3,24 +3,34 @@
 
 import gymnasium as gym
 
+from . import agents
+
 ##
-# Register Gym environments
+# Register Gym environments.
+##
+
+##
+# Joint Position Control
+##
+
+gym.register(
+    id="Template-Mycobot-280-Joint-v0",
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    kwargs={
+        "env_cfg_entry_point": f"{__name__}.config.mycobot_280_joint_pos_env_cfg:MycobotEnvCfg",
+    },
+    disable_env_checker=True,
+)
+
+##
+# Inverse Kinematics - Relative Pose Control
 ##
 
 gym.register(
     id="Template-Mycobot-280-IK-Rel-v0",
-    entry_point="isaaclab.envs:ManagerBasedEnv",
-    disable_env_checker=True,
+    entry_point="isaaclab.envs:ManagerBasedRLEnv",
     kwargs={
-        "env_cfg_entry_point": "mycobot_280_2.tasks.manager_based.mycobot_280_2.config.mycobot_280_ik_rel_env_cfg:MycobotIKRelEnvCfg",
+        "env_cfg_entry_point": f"{__name__}.config.mycobot_280_ik_rel_env_cfg:MycobotIKRelEnvCfg",
     },
-)
-
-gym.register(
-    id="Template-Mycobot-280-Joint-v0",
-    entry_point="isaaclab.envs:ManagerBasedEnv",
     disable_env_checker=True,
-    kwargs={
-        "env_cfg_entry_point": "mycobot_280_2.tasks.manager_based.mycobot_280_2.config.mycobot_280_joint_pos_env_cfg:MycobotEnvCfg",
-    },
 )

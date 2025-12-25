@@ -6,3 +6,4 @@
 from isaaclab.envs.mdp import *  # Import all standard MDP functions
 #from .observations import *      # Add custom observation functions
 #from .terminations import *      # Add custom termination functions
+from .rewards import *  # noqa: F401, F403

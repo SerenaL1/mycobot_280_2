@@ -1,21 +1,26 @@
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers
+# SPDX-License-Identifier: BSD-3-Clause
+
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
-from isaaclab.envs import ManagerBasedEnvCfg
+from isaaclab.envs import ManagerBasedRLEnvCfg  # Changed from ManagerBasedEnvCfg
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import FrameTransformerCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import GroundPlaneCfg, UsdFileCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
-from isaaclab.managers import TerminationTermCfg as DoneTerm 
+
 from . import mdp
 
 ##
 # Scene definition
 ##
+
 
 @configclass
 class Mycobot2802SceneCfg(InteractiveSceneCfg):
@@ -40,7 +45,7 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
         spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
     )
 
-    # Tray for blocks (YOU HAVE THIS!)
+    # Tray for blocks
     tray = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Tray",
         spawn=sim_utils.CuboidCfg(
@@ -64,6 +69,7 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
 # MDP settings
 ##
 
+
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
@@ -83,11 +89,7 @@ class ObservationsCfg:
         # Robot joint state
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
-        
-        # End-effector state
-  #      ee_pos = ObsTerm(func=mdp.ee_frame_pos)
-  #      ee_quat = ObsTerm(func=mdp.ee_frame_quat)
-        
+
         # Last action
         actions = ObsTerm(func=mdp.last_action)
 
@@ -98,20 +100,21 @@ class ObservationsCfg:
     # Observation groups
     policy: PolicyCfg = PolicyCfg()
 
+
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
-    
+
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
 
 
 @configclass
-class Mycobot2802EnvCfg(ManagerBasedEnvCfg):
+class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):  # Changed from ManagerBasedEnvCfg
     """Base configuration for the MyCobot 280 manipulation environment."""
 
     # Scene settings
     scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=1, env_spacing=2.0, replicate_physics=False)
-    
+
     # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
@@ -121,7 +124,6 @@ class Mycobot2802EnvCfg(ManagerBasedEnvCfg):
     commands = None
     rewards = None
     events = None
-  #  terminations = None
     curriculum = None
 
     def __post_init__(self):
@@ -129,15 +131,15 @@ class Mycobot2802EnvCfg(ManagerBasedEnvCfg):
         # general settings
         self.decimation = 2
         self.episode_length_s = 20.0
-        
+
         # viewer settings
         self.viewer.eye = (1.5, 1.5, 1.0)
         self.viewer.lookat = (0.4, 0.0, 0.5)
-        
+
         # simulation settings
         self.sim.dt = 1.0 / 120.0
         self.sim.render_interval = self.decimation
-        
+
         # physics settings
         self.sim.physx.bounce_threshold_velocity = 0.2
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
