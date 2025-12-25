@@ -1,0 +1,98 @@
+mycobot_280_2
+├── .dockerignore
+├── .flake8
+├── .gitattributes
+├── .gitignore
+├── .pre-commit-config.yaml
+├── .vscode
+│   ├── .gitignore
+│   ├── extensions.json
+│   ├── tasks.json
+│   └── tools
+│       ├── launch.template.json
+│       ├── settings.template.json
+│       └── setup_vscode.py
+├── README.md
+├── scripts
+│   ├── list_envs.py
+│   ├── random_agent.py
+│   ├── rl_games
+│   │   ├── play.py
+│   │   └── train.py
+│   ├── rsl_rl
+│   │   ├── cli_args.py
+│   │   ├── play.py
+│   │   ├── train.py
+│   │   └── __pycache__
+│   │       └── cli_args.cpython-311.pyc
+│   ├── sb3
+│   │   ├── play.py
+│   │   └── train.py
+│   ├── skrl
+│   │   ├── play.py
+│   │   └── train.py
+│   ├── teleop_se3_agent.py
+│   └── zero_agent.py
+└── source
+    └── mycobot_280_2
+        ├── config
+        │   └── extension.toml
+        ├── docs
+        │   └── CHANGELOG.rst
+        ├── mycobot_280_2
+        │   ├── tasks
+        │   │   ├── manager_based
+        │   │   │   ├── mycobot_280_2
+        │   │   │   │   ├── agents
+        │   │   │   │   │   ├── rl_games_ppo_cfg.yaml
+        │   │   │   │   │   ├── rsl_rl_ppo_cfg.py
+        │   │   │   │   │   ├── sb3_ppo_cfg.yaml
+        │   │   │   │   │   ├── skrl_amp_cfg.yaml
+        │   │   │   │   │   ├── skrl_ppo_cfg.yaml
+        │   │   │   │   │   ├── __init__.py
+        │   │   │   │   │   └── __pycache__
+        │   │   │   │   │       └── __init__.cpython-311.pyc
+        │   │   │   │   ├── assets
+        │   │   │   │   │   └── mycobot_280_3.usd
+        │   │   │   │   ├── config
+        │   │   │   │   │   ├── mycobot_280_ik_rel_env_cfg.py
+        │   │   │   │   │   ├── mycobot_280_joint_pos_env_cfg.py
+        │   │   │   │   │   ├── __init__.py
+        │   │   │   │   │   └── __pycache__
+        │   │   │   │   │       ├── mycobot_280_ik_rel_env_cfg.cpython-311.pyc
+        │   │   │   │   │       ├── mycobot_280_joint_pos_env_cfg.cpython-311.pyc
+        │   │   │   │   │       └── __init__.cpython-311.pyc
+        │   │   │   │   ├── mdp
+        │   │   │   │   │   ├── rewards.py
+        │   │   │   │   │   ├── __init__.py
+        │   │   │   │   │   └── __pycache__
+        │   │   │   │   │       ├── rewards.cpython-311.pyc
+        │   │   │   │   │       └── __init__.cpython-311.pyc
+        │   │   │   │   ├── mycobot_280_2.py
+        │   │   │   │   ├── mycobot_280_2_env_cfg.py
+        │   │   │   │   ├── __init__.py
+        │   │   │   │   └── __pycache__
+        │   │   │   │       ├── mycobot_280_2.cpython-311.pyc
+        │   │   │   │       ├── mycobot_280_2_env_cfg.cpython-311.pyc
+        │   │   │   │       ├── mycobot_280_ik_rel_env_cfg.cpython-311.pyc
+        │   │   │   │       └── __init__.cpython-311.pyc
+        │   │   │   ├── __init__.py
+        │   │   │   └── __pycache__
+        │   │   │       └── __init__.cpython-311.pyc
+        │   │   ├── __init__.py
+        │   │   └── __pycache__
+        │   │       └── __init__.cpython-311.pyc
+        │   ├── ui_extension_example.py
+        │   ├── __init__.py
+        │   └── __pycache__
+        │       ├── ui_extension_example.cpython-311.pyc
+        │       └── __init__.cpython-311.pyc
+        ├── mycobot_280_2.egg-info
+        │   ├── dependency_links.txt
+        │   ├── not-zip-safe
+        │   ├── PKG-INFO
+        │   ├── requires.txt
+        │   ├── SOURCES.txt
+        │   └── top_level.txt
+        ├── pyproject.toml
+        └── setup.py

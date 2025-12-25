@@ -1,21 +1,14 @@
-# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
-# All rights reserved.
-#
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Script to run teleoperation with Isaac Lab manipulation environments.
-
-Supports multiple input devices (e.g., keyboard, spacemouse, gamepad) and devices
-configured within the environment (including OpenXR-based hand tracking or motion
-controllers)."""
-
-"""Launch Isaac Sim Simulator first."""
+"""Script to run teleoperation with Isaac Lab manipulation environments."""
 
 import argparse
+import sys
+import os
 from collections.abc import Callable
 
 from isaaclab.app import AppLauncher
-
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Teleoperation for Isaac Lab environments.")
@@ -24,11 +17,7 @@ parser.add_argument(
     "--teleop_device",
     type=str,
     default="keyboard",
-    help=(
-        "Teleop device. Set here (legacy) or via the environment config. If using the environment config, pass the"
-        " device key/name defined under 'teleop_devices' (it can be a custom name, not necessarily 'handtracking')."
-        " Built-ins: keyboard, spacemouse, gamepad. Not all tasks support all built-ins."
-    ),
+    help="Teleop device: keyboard, spacemouse, gamepad.",
 )
 parser.add_argument("--task", type=str, default=None, help="Name of the task.")
 parser.add_argument("--sensitivity", type=float, default=1.0, help="Sensitivity factor.")
@@ -46,9 +35,6 @@ args_cli = parser.parse_args()
 app_launcher_args = vars(args_cli)
 
 if args_cli.enable_pinocchio:
-    # Import pinocchio before AppLauncher to force the use of the version installed by IsaacLab and
-    # not the one installed by Isaac Sim pinocchio is required by the Pink IK controllers and the
-    # GR1T2 retargeter
     import pinocchio  # noqa: F401
 if "handtracking" in args_cli.teleop_device.lower():
     app_launcher_args["xr"] = True
@@ -58,7 +44,6 @@ app_launcher = AppLauncher(app_launcher_args)
 simulation_app = app_launcher.app
 
 """Rest everything follows."""
-
 
 import gymnasium as gym
 import logging
@@ -80,25 +65,35 @@ if args_cli.enable_pinocchio:
 # import logger
 logger = logging.getLogger(__name__)
 
+
 def main() -> None:
-    """
-    Run teleoperation with an Isaac Lab manipulation environment.
-
-    Creates the environment, sets up teleoperation interfaces and callbacks,
-    and runs the main simulation loop until the application is closed.
-
-    Returns:
-        None
-    """
-    import mycobot_280_2.tasks.manager_based.mycobot_280_2    # parse configuration
+    """Run teleoperation with an Isaac Lab manipulation environment."""
+    
+    # =========================================================================
+    # Add the source directory to sys.path and import properly
+    # =========================================================================
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    source_module_path = os.path.join(project_root, "source", "mycobot_280_2", "mycobot_280_2")
+    
+    if source_module_path not in sys.path:
+        sys.path.insert(0, source_module_path)
+        print(f"[INFO] Added to sys.path: {source_module_path}")
+    
+    import tasks.manager_based.mycobot_280_2  # noqa: F401
+    print("[INFO] Successfully imported mycobot_280_2 task module")
+    
+    # =========================================================================
+    
+    # parse configuration
     env_cfg = parse_env_cfg(args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs)
     env_cfg.env_name = args_cli.task
+    
     # modify configuration
     env_cfg.terminations.time_out = None
+    
     if "Lift" in args_cli.task:
-        # set the resampling time range to large number to avoid resampling
         env_cfg.commands.object_pose.resampling_time_range = (1.0e9, 1.0e9)
-        # add termination condition for reaching the goal otherwise the environment won't reset
         env_cfg.terminations.object_reached_goal = DoneTerm(func=mdp.object_reached_goal)
 
     if args_cli.xr:
@@ -108,62 +103,38 @@ def main() -> None:
     try:
         # create environment
         env = gym.make(args_cli.task, cfg=env_cfg).unwrapped
-        # check environment name (for reach , we don't allow the gripper)
         if "Reach" in args_cli.task:
             logger.warning(
-                f"The environment '{args_cli.task}' does not support gripper control. The device command will be"
-                " ignored."
+                f"The environment '{args_cli.task}' does not support gripper control."
             )
     except Exception as e:
         logger.error(f"Failed to create environment: {e}")
         simulation_app.close()
         return
 
+    # Get the expected action dimension from the environment
+    action_dim = env.action_space.shape[-1]
+    print(f"[INFO] Environment action dimension: {action_dim}")
+
     # Flags for controlling teleoperation flow
     should_reset_recording_instance = False
     teleoperation_active = True
 
-    # Callback handlers
     def reset_recording_instance() -> None:
-        """
-        Reset the environment to its initial state.
-
-        Sets a flag to reset the environment on the next simulation step.
-
-        Returns:
-            None
-        """
         nonlocal should_reset_recording_instance
         should_reset_recording_instance = True
         print("Reset triggered - Environment will reset on next step")
 
     def start_teleoperation() -> None:
-        """
-        Activate teleoperation control of the robot.
-
-        Enables the application of teleoperation commands to the environment.
-
-        Returns:
-            None
-        """
         nonlocal teleoperation_active
         teleoperation_active = True
         print("Teleoperation activated")
 
     def stop_teleoperation() -> None:
-        """
-        Deactivate teleoperation control of the robot.
-
-        Disables the application of teleoperation commands to the environment.
-
-        Returns:
-            None
-        """
         nonlocal teleoperation_active
         teleoperation_active = False
         print("Teleoperation deactivated")
 
-    # Create device config if not already in env_cfg
     teleoperation_callbacks: dict[str, Callable[[], None]] = {
         "R": reset_recording_instance,
         "START": start_teleoperation,
@@ -171,15 +142,12 @@ def main() -> None:
         "RESET": reset_recording_instance,
     }
 
-    # For hand tracking devices, add additional callbacks
     if args_cli.xr:
-        # Default to inactive for hand tracking
         teleoperation_active = False
     else:
-        # Always active for other devices
         teleoperation_active = True
 
-    # Create teleop device from config if present, otherwise create manually
+    # Create teleop device
     teleop_interface = None
     try:
         if hasattr(env_cfg, "teleop_devices") and args_cli.teleop_device in env_cfg.teleop_devices.devices:
@@ -190,7 +158,6 @@ def main() -> None:
             logger.warning(
                 f"No teleop device '{args_cli.teleop_device}' found in environment config. Creating default."
             )
-            # Create fallback teleop device
             sensitivity = args_cli.sensitivity
             if args_cli.teleop_device.lower() == "keyboard":
                 teleop_interface = Se3Keyboard(
@@ -206,12 +173,10 @@ def main() -> None:
                 )
             else:
                 logger.error(f"Unsupported teleop device: {args_cli.teleop_device}")
-                logger.error("Configure the teleop device in the environment config.")
                 env.close()
                 simulation_app.close()
                 return
 
-            # Add callbacks to fallback device
             for key, callback in teleoperation_callbacks.items():
                 try:
                     teleop_interface.add_callback(key, callback)
@@ -236,20 +201,40 @@ def main() -> None:
     teleop_interface.reset()
 
     print("Teleoperation started. Press 'R' to reset the environment.")
+    print(f"[INFO] Note: MyCobot has no gripper, gripper commands (K key) will be ignored.")
 
     # simulate environment
     while simulation_app.is_running():
         try:
-            # run everything in inference mode
             with torch.inference_mode():
-                # get device command
-                action = teleop_interface.advance()
-
-                # Only apply teleop commands when active
+                # Get raw action from teleop device
+                # Keyboard returns shape (7,): [x, y, z, roll, pitch, yaw, gripper]
+                raw_action = teleop_interface.advance()
+                
                 if teleoperation_active:
-                    # process actions
+                    # Convert to tensor if needed
+                    if not isinstance(raw_action, torch.Tensor):
+                        raw_action = torch.tensor(raw_action, device=env.device, dtype=torch.float32)
+                    
+                    # FIXED: Slice to match expected action dimension (remove gripper if needed)
+                    # MyCobot 280 has 6 DOF, keyboard outputs 7 (6 pose + 1 gripper)
+                    if raw_action.shape[-1] > action_dim:
+                        action = raw_action[..., :action_dim]  # Take only first 6 values
+                    elif raw_action.shape[-1] < action_dim:
+                        # Pad with zeros if needed
+                        padding = torch.zeros(action_dim - raw_action.shape[-1], device=env.device)
+                        action = torch.cat([raw_action, padding], dim=-1)
+                    else:
+                        action = raw_action
+                    
+                    # Ensure correct shape for batched environments
+                    if action.dim() == 1:
+                        action = action.unsqueeze(0)  # Add batch dimension
+                    
+                    # Repeat for all environments
                     actions = action.repeat(env.num_envs, 1)
-                    # apply actions
+                    
+                    # Step the environment
                     env.step(actions)
                 else:
                     env.sim.render()
@@ -261,15 +246,14 @@ def main() -> None:
                     print("Environment reset complete")
         except Exception as e:
             logger.error(f"Error during simulation step: {e}")
+            import traceback
+            traceback.print_exc()
             break
 
-    # close the simulator
     env.close()
     print("Environment closed")
 
 
 if __name__ == "__main__":
-    # run the main function
     main()
-    # close sim app
     simulation_app.close()

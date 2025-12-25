@@ -110,7 +110,7 @@ class MycobotEnvCfg(Mycobot2802EnvCfg):
         marker_cfg.markers["frame"].scale = (0.1, 0.1, 0.1)
         marker_cfg.prim_path = "/Visuals/FrameTransformer"
         self.scene.ee_frame = FrameTransformerCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/base_link",
+            prim_path="{ENV_REGEX_NS}/Robot/g_base",
             debug_vis=False,
             visualizer_cfg=marker_cfg,
             target_frames=[
