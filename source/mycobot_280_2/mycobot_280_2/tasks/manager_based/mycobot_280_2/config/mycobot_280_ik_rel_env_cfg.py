@@ -7,7 +7,7 @@ from isaaclab.devices.keyboard import Se3KeyboardCfg
 from isaaclab.envs.mdp.actions.actions_cfg import DifferentialInverseKinematicsActionCfg
 from isaaclab.utils import configclass
 
-from . import mycobot_280_joint_pos_env_cfg  # ← Changed: Same folder now
+from . import mycobot_280_joint_pos_env_cfg  # Same folder
 
 
 @configclass

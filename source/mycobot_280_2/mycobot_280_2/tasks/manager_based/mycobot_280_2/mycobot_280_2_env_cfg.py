@@ -4,7 +4,7 @@
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
-from isaaclab.assets import ArticulationCfg, AssetBaseCfg
+from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
@@ -45,23 +45,65 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
         spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
     )
 
-    # Tray - gray 10x10cm tray to hold blocks
-    tray = AssetBaseCfg(
+    # Tray - hollow tray with walls to hold blocks (10x10cm, 2cm tall)
+    # Positioned CLOSE to robot arm so it can push it forward
+    # Robot base is at ~(0, 0, 0.7), so tray at (0.25, 0.0, 0.72) is within reach
+    tray = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Tray",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.10, 0.10, 0.02),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, 0.0, 0.72)),
+        spawn=sim_utils.MultiShapeCfg(
+            shapes=[
+                # Base (bottom of tray) - 10x10cm x 0.5cm thick
+                sim_utils.CuboidCfg(
+                    size=(0.10, 0.10, 0.005),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
+                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
+                    collision_props=sim_utils.CollisionPropertiesCfg(),
+                ),
+                # Front wall (along Y axis, at -X) - towards robot
+                sim_utils.CuboidCfg(
+                    size=(0.005, 0.10, 0.02),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
+                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
+                    collision_props=sim_utils.CollisionPropertiesCfg(),
+                    offset=sim_utils.OffsetCfg(pos=(-0.0475, 0.0, 0.0125)),
+                ),
+                # Back wall (along Y axis, at +X) - away from robot
+                sim_utils.CuboidCfg(
+                    size=(0.005, 0.10, 0.02),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
+                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
+                    collision_props=sim_utils.CollisionPropertiesCfg(),
+                    offset=sim_utils.OffsetCfg(pos=(0.0475, 0.0, 0.0125)),
+                ),
+                # Left wall (along X axis, at -Y)
+                sim_utils.CuboidCfg(
+                    size=(0.09, 0.005, 0.02),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
+                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
+                    collision_props=sim_utils.CollisionPropertiesCfg(),
+                    offset=sim_utils.OffsetCfg(pos=(0.0, -0.0475, 0.0125)),
+                ),
+                # Right wall (along X axis, at +Y)
+                sim_utils.CuboidCfg(
+                    size=(0.09, 0.005, 0.02),
+                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
+                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
+                    collision_props=sim_utils.CollisionPropertiesCfg(),
+                    offset=sim_utils.OffsetCfg(pos=(0.0, 0.0475, 0.0125)),
+                ),
+            ],
             rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
             mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
             collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, 0.0, 0.72)),
     )
 
-    # Kohs blocks - 9 red 2.5cm cubes arranged in 3x3 grid on the tray
-    # Tray center is at (0.45, 0.0, 0.72), blocks sit on top at z=0.735
-    # Blocks are spaced 2.5cm apart (0.025m spacing) in a 3x3 grid
-    block_0 = AssetBaseCfg(
+    # Kohs blocks - 9 red 2.5cm cubes arranged in 3x3 grid INSIDE the tray
+    # Tray center is at (0.25, 0.0, 0.72)
+    # Blocks sit on tray base at z = 0.72 + 0.005/2 + 0.025/2 = 0.735
+    # Blocks are spaced 2.5cm apart (0.025m) in a 3x3 grid
+    block_0 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_0",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -69,11 +111,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.42, -0.025, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.22, -0.025, 0.735)),
     )
     
-    block_1 = AssetBaseCfg(
+    block_1 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_1",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -81,11 +124,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, -0.025, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, -0.025, 0.735)),
     )
     
-    block_2 = AssetBaseCfg(
+    block_2 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_2",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -93,11 +137,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.48, -0.025, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.28, -0.025, 0.735)),
     )
     
-    block_3 = AssetBaseCfg(
+    block_3 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_3",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -105,11 +150,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.42, 0.0, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.22, 0.0, 0.735)),
     )
     
-    block_4 = AssetBaseCfg(
+    block_4 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_4",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -117,11 +163,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, 0.0, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, 0.0, 0.735)),
     )
     
-    block_5 = AssetBaseCfg(
+    block_5 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_5",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -129,11 +176,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.48, 0.0, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.28, 0.0, 0.735)),
     )
     
-    block_6 = AssetBaseCfg(
+    block_6 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_6",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -141,11 +189,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.42, 0.025, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.22, 0.025, 0.735)),
     )
     
-    block_7 = AssetBaseCfg(
+    block_7 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_7",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -153,11 +202,12 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, 0.025, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, 0.025, 0.735)),
     )
     
-    block_8 = AssetBaseCfg(
+    block_8 = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Block_8",
         spawn=sim_utils.CuboidCfg(
             size=(0.025, 0.025, 0.025),
@@ -165,8 +215,9 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
             mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.48, 0.025, 0.735)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.28, 0.025, 0.735)),
     )
 
     # lights

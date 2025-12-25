@@ -2,17 +2,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import isaaclab.sim as sim_utils
-from isaaclab.assets import RigidObjectCfg
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
-from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 from isaaclab.utils import configclass
 
-from .. import mdp  # ← Changed: Go up one level to mycobot_280_2/
-from ..mycobot_280_2_env_cfg import Mycobot2802EnvCfg  # ← Changed: Import from parent
-from ..mycobot_280_2 import MYCOBOT_280_CFG  # ← Changed: Import from parent
+from .. import mdp  # Go up one level to mycobot_280_2/
+from ..mycobot_280_2_env_cfg import Mycobot2802EnvCfg  # Import from parent
+from ..mycobot_280_2 import MYCOBOT_280_CFG  # Import from parent
 
 ##
 # Pre-defined configs
@@ -22,29 +20,156 @@ from isaaclab.markers.config import FRAME_MARKER_CFG  # isort: skip
 
 @configclass
 class EventCfg:
-    """Configuration for events."""
+    """Configuration for events - DETERMINISTIC resets for clinical reliability."""
 
-    # Reset robot to home position
+    # Reset robot to home position (deterministic)
     reset_robot_joints = EventTerm(
         func=mdp.reset_joints_by_scale,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("robot"),
-            "position_range": (0.9, 1.1),
+            "position_range": (1.0, 1.0),  # Exactly 1.0 = deterministic
             "velocity_range": (0.0, 0.0),
         },
     )
 
-    # Reset block position (with small randomization)
-    reset_block_position = EventTerm(
+    # Reset tray to exact position (deterministic - NO randomization)
+    reset_tray_position = EventTerm(
         func=mdp.reset_root_state_uniform,
         mode="reset",
         params={
-            "asset_cfg": SceneEntityCfg("kohs_block"),
+            "asset_cfg": SceneEntityCfg("tray"),
             "pose_range": {
-                "x": (0.33, 0.37),
-                "y": (-0.02, 0.02),
-                "z": (0.7325, 0.7325),
+                "x": (0.25, 0.25),  # Exact position
+                "y": (0.0, 0.0),    # Exact position
+                "z": (0.72, 0.72),  # Exact position
+            },
+            "velocity_range": {},
+        },
+    )
+
+    # Reset all 9 blocks to EXACT positions (deterministic - NO randomization)
+    reset_block_0 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_0"),
+            "pose_range": {
+                "x": (0.22, 0.22),
+                "y": (-0.025, -0.025),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_1 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_1"),
+            "pose_range": {
+                "x": (0.25, 0.25),
+                "y": (-0.025, -0.025),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_2 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_2"),
+            "pose_range": {
+                "x": (0.28, 0.28),
+                "y": (-0.025, -0.025),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_3 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_3"),
+            "pose_range": {
+                "x": (0.22, 0.22),
+                "y": (0.0, 0.0),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_4 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_4"),
+            "pose_range": {
+                "x": (0.25, 0.25),
+                "y": (0.0, 0.0),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_5 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_5"),
+            "pose_range": {
+                "x": (0.28, 0.28),
+                "y": (0.0, 0.0),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_6 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_6"),
+            "pose_range": {
+                "x": (0.22, 0.22),
+                "y": (0.025, 0.025),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_7 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_7"),
+            "pose_range": {
+                "x": (0.25, 0.25),
+                "y": (0.025, 0.025),
+                "z": (0.735, 0.735),
+            },
+            "velocity_range": {},
+        },
+    )
+
+    reset_block_8 = EventTerm(
+        func=mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("block_8"),
+            "pose_range": {
+                "x": (0.28, 0.28),
+                "y": (0.025, 0.025),
+                "z": (0.735, 0.735),
             },
             "velocity_range": {},
         },
@@ -72,37 +197,6 @@ class MycobotEnvCfg(Mycobot2802EnvCfg):
                          "joint5_to_joint4", "joint6_to_joint5", "joint6output_to_joint6"],
             scale=0.5,
             use_default_offset=True
-        )
-
-        # Rigid body properties for the Kohs block
-        block_properties = RigidBodyPropertiesCfg(
-            solver_position_iteration_count=16,
-            solver_velocity_iteration_count=1,
-            max_angular_velocity=1000.0,
-            max_linear_velocity=1000.0,
-            max_depenetration_velocity=5.0,
-            disable_gravity=False,
-        )
-
-        # Set the Kohs block
-        self.scene.kohs_block = RigidObjectCfg(
-            prim_path="{ENV_REGEX_NS}/KohsBlock",
-            init_state=RigidObjectCfg.InitialStateCfg(
-                pos=(0.35, 0.0, 0.7325),
-                rot=(1.0, 0.0, 0.0, 0.0)
-            ),
-            spawn=sim_utils.CuboidCfg(
-                size=(0.025, 0.025, 0.025),
-                rigid_props=block_properties,
-                mass_props=sim_utils.MassPropertiesCfg(mass=0.015),
-                collision_props=sim_utils.CollisionPropertiesCfg(),
-                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.9, 0.1, 0.1)),
-                physics_material=sim_utils.RigidBodyMaterialCfg(
-                    static_friction=0.5,
-                    dynamic_friction=0.4,
-                    restitution=0.1,
-                ),
-            ),
         )
 
         # Frame transformer for end-effector tracking
