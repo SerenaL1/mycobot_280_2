@@ -5,7 +5,7 @@ from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
-from isaaclab.envs import ManagerBasedRLEnvCfg  # Changed from ManagerBasedEnvCfg
+from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import TerminationTermCfg as DoneTerm
@@ -45,17 +45,128 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
         spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
     )
 
-    # Tray for blocks
+    # Tray - gray 10x10cm tray to hold blocks
     tray = AssetBaseCfg(
         prim_path="{ENV_REGEX_NS}/Tray",
         spawn=sim_utils.CuboidCfg(
-            size=(0.12, 0.12, 0.02),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=True),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.2),
+            size=(0.10, 0.10, 0.02),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
             collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.2, 0.2, 0.2)),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.35, 0.0, 0.71)),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, 0.0, 0.72)),
+    )
+
+    # Kohs blocks - 9 red 2.5cm cubes arranged in 3x3 grid on the tray
+    # Tray center is at (0.45, 0.0, 0.72), blocks sit on top at z=0.735
+    # Blocks are spaced 2.5cm apart (0.025m spacing) in a 3x3 grid
+    block_0 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_0",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.42, -0.025, 0.735)),
+    )
+    
+    block_1 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_1",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, -0.025, 0.735)),
+    )
+    
+    block_2 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_2",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.48, -0.025, 0.735)),
+    )
+    
+    block_3 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_3",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.42, 0.0, 0.735)),
+    )
+    
+    block_4 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_4",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, 0.0, 0.735)),
+    )
+    
+    block_5 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_5",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.48, 0.0, 0.735)),
+    )
+    
+    block_6 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_6",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.42, 0.025, 0.735)),
+    )
+    
+    block_7 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_7",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.45, 0.025, 0.735)),
+    )
+    
+    block_8 = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/Block_8",
+        spawn=sim_utils.CuboidCfg(
+            size=(0.025, 0.025, 0.025),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
+            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+        ),
+        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.48, 0.025, 0.735)),
     )
 
     # lights
@@ -109,7 +220,7 @@ class TerminationsCfg:
 
 
 @configclass
-class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):  # Changed from ManagerBasedEnvCfg
+class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):
     """Base configuration for the MyCobot 280 manipulation environment."""
 
     # Scene settings
