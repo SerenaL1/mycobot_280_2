@@ -39,11 +39,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("tray"),
-            "pose_range": {
-                "x": (0.25, 0.25),  # Exact position
-                "y": (0.0, 0.0),    # Exact position
-                "z": (0.72, 0.72),  # Exact position
-            },
+            "pose_range": {},  # No change - uses init_state position
             "velocity_range": {},
         },
     )
@@ -54,11 +50,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_0"),
-            "pose_range": {
-                "x": (0.22, 0.22),
-                "y": (-0.025, -0.025),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},  # No change - uses init_state position
             "velocity_range": {},
         },
     )
@@ -68,11 +60,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_1"),
-            "pose_range": {
-                "x": (0.25, 0.25),
-                "y": (-0.025, -0.025),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -82,11 +70,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_2"),
-            "pose_range": {
-                "x": (0.28, 0.28),
-                "y": (-0.025, -0.025),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -96,11 +80,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_3"),
-            "pose_range": {
-                "x": (0.22, 0.22),
-                "y": (0.0, 0.0),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -110,11 +90,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_4"),
-            "pose_range": {
-                "x": (0.25, 0.25),
-                "y": (0.0, 0.0),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -124,11 +100,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_5"),
-            "pose_range": {
-                "x": (0.28, 0.28),
-                "y": (0.0, 0.0),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -138,11 +110,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_6"),
-            "pose_range": {
-                "x": (0.22, 0.22),
-                "y": (0.025, 0.025),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -152,11 +120,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_7"),
-            "pose_range": {
-                "x": (0.25, 0.25),
-                "y": (0.025, 0.025),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )
@@ -166,11 +130,7 @@ class EventCfg:
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("block_8"),
-            "pose_range": {
-                "x": (0.28, 0.28),
-                "y": (0.025, 0.025),
-                "z": (0.735, 0.735),
-            },
+            "pose_range": {},
             "velocity_range": {},
         },
     )

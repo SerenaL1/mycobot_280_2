@@ -16,12 +16,80 @@ from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 from . import mdp
+import os
+
+##
+# Scene configuration - RELATIVE POSITIONING
+##
+TRAY_USD_PATH = os.path.join(os.path.dirname(__file__), "assets", "tray.usd")
+
+# Tray configuration - CHANGE THESE THREE VALUES TO MOVE EVERYTHING!
+TRAY_CENTER_X = 0.25
+TRAY_CENTER_Y = 0.0
+TRAY_CENTER_Z = 0.005  # Relative to table surface (z=0.7 is table top)
+TRAY_BOTTOM_THICKNESS = 0.3 * 0.0254  # 0.3 inches from your Fusion model
+TRAY_SIZE = 0.10  # 10cm x 10cm
+
+# Block configuration
+BLOCK_SIZE = 1.0 * 0.0254  # 1 inch = 0.0254m
+BLOCK_GAP = 0.3 * 0.0254  # 0.3 inch gap between blocks
+BLOCK_SPACING = BLOCK_SIZE + BLOCK_GAP  # 1.3 inches center-to-center
+BLOCK_MASS = 0.02  # 20g
+
+# Calculate block z-position: sitting ON tray bottom
+# Just: tray_z + tray_bottom_thickness + half_block_height
+BLOCK_Z = TRAY_CENTER_Z + TRAY_BOTTOM_THICKNESS + BLOCK_SIZE / 2
+
+# Calculate 3x3 grid positions centered on tray
+# Grid offsets: -1, 0, +1 spacing from center
+BLOCK_POSITIONS = [
+    # Row 1 (back row, y = -BLOCK_SPACING)
+    (TRAY_CENTER_X - BLOCK_SPACING, TRAY_CENTER_Y - BLOCK_SPACING, BLOCK_Z),  # block_0
+    (TRAY_CENTER_X,                  TRAY_CENTER_Y - BLOCK_SPACING, BLOCK_Z),  # block_1
+    (TRAY_CENTER_X + BLOCK_SPACING, TRAY_CENTER_Y - BLOCK_SPACING, BLOCK_Z),  # block_2
+    # Row 2 (middle row, y = 0)
+    (TRAY_CENTER_X - BLOCK_SPACING, TRAY_CENTER_Y,                  BLOCK_Z),  # block_3
+    (TRAY_CENTER_X,                  TRAY_CENTER_Y,                  BLOCK_Z),  # block_4
+    (TRAY_CENTER_X + BLOCK_SPACING, TRAY_CENTER_Y,                  BLOCK_Z),  # block_5
+    # Row 3 (front row, y = +BLOCK_SPACING)
+    (TRAY_CENTER_X - BLOCK_SPACING, TRAY_CENTER_Y + BLOCK_SPACING, BLOCK_Z),  # block_6
+    (TRAY_CENTER_X,                  TRAY_CENTER_Y + BLOCK_SPACING, BLOCK_Z),  # block_7
+    (TRAY_CENTER_X + BLOCK_SPACING, TRAY_CENTER_Y + BLOCK_SPACING, BLOCK_Z),  # block_8
+]
+
+##
+# Helper function to create blocks
+##
+def create_block_cfg(block_id: int, position: tuple) -> RigidObjectCfg:
+    """Create a block with consistent physics settings."""
+    return RigidObjectCfg(
+        prim_path=f"{{ENV_REGEX_NS}}/Block_{block_id}",
+        spawn=sim_utils.CuboidCfg(
+            size=(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE),
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                kinematic_enabled=False,
+                disable_gravity=False,
+                solver_position_iteration_count=16,
+                solver_velocity_iteration_count=8,
+                linear_damping=0.5,
+                angular_damping=0.5,
+            ),
+            mass_props=sim_utils.MassPropertiesCfg(mass=BLOCK_MASS),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                static_friction=0.8,
+                dynamic_friction=0.7,
+                restitution=0.0,
+            ),
+        ),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=position),
+    )
+
 
 ##
 # Scene definition
 ##
-
-
 @configclass
 class Mycobot2802SceneCfg(InteractiveSceneCfg):
     """Configuration for the MyCobot 280 scene with robot and objects."""
@@ -45,180 +113,29 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
         spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/SeattleLabTable/table_instanceable.usd"),
     )
 
-    # Tray - hollow tray with walls to hold blocks (10x10cm, 2cm tall)
-    # Positioned CLOSE to robot arm so it can push it forward
-    # Robot base is at ~(0, 0, 0.7), so tray at (0.25, 0.0, 0.72) is within reach
+    # Tray - Use your custom USD file 
+    # Make sure you have tray.usd in the assets folder
     tray = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Tray",
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, 0.0, 0.72)),
-        spawn=sim_utils.MultiShapeCfg(
-            shapes=[
-                # Base (bottom of tray) - 10x10cm x 0.5cm thick
-                sim_utils.CuboidCfg(
-                    size=(0.10, 0.10, 0.005),
-                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
-                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
-                    collision_props=sim_utils.CollisionPropertiesCfg(),
-                ),
-                # Front wall (along Y axis, at -X) - towards robot
-                sim_utils.CuboidCfg(
-                    size=(0.005, 0.10, 0.02),
-                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
-                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
-                    collision_props=sim_utils.CollisionPropertiesCfg(),
-                    offset=sim_utils.OffsetCfg(pos=(-0.0475, 0.0, 0.0125)),
-                ),
-                # Back wall (along Y axis, at +X) - away from robot
-                sim_utils.CuboidCfg(
-                    size=(0.005, 0.10, 0.02),
-                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
-                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
-                    collision_props=sim_utils.CollisionPropertiesCfg(),
-                    offset=sim_utils.OffsetCfg(pos=(0.0475, 0.0, 0.0125)),
-                ),
-                # Left wall (along X axis, at -Y)
-                sim_utils.CuboidCfg(
-                    size=(0.09, 0.005, 0.02),
-                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
-                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
-                    collision_props=sim_utils.CollisionPropertiesCfg(),
-                    offset=sim_utils.OffsetCfg(pos=(0.0, -0.0475, 0.0125)),
-                ),
-                # Right wall (along X axis, at +Y)
-                sim_utils.CuboidCfg(
-                    size=(0.09, 0.005, 0.02),
-                    visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.3, 0.3, 0.3)),
-                    physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.6),
-                    collision_props=sim_utils.CollisionPropertiesCfg(),
-                    offset=sim_utils.OffsetCfg(pos=(0.0, 0.0475, 0.0125)),
-                ),
-            ],
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
+        init_state=RigidObjectCfg.InitialStateCfg(
+            pos=(TRAY_CENTER_X, TRAY_CENTER_Y, TRAY_CENTER_Z)
+        ),
+        spawn=UsdFileCfg(
+            usd_path=TRAY_USD_PATH,
+            scale=(0.0254, 0.0254, 0.0254),  # 4 inches converted to meters
         ),
     )
 
-    # Kohs blocks - 9 red 2.5cm cubes arranged in 3x3 grid INSIDE the tray
-    # Tray center is at (0.25, 0.0, 0.72)
-    # Blocks sit on tray base at z = 0.72 + 0.005/2 + 0.025/2 = 0.735
-    # Blocks are spaced 2.5cm apart (0.025m) in a 3x3 grid
-    block_0 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_0",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.22, -0.025, 0.735)),
-    )
-    
-    block_1 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_1",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, -0.025, 0.735)),
-    )
-    
-    block_2 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_2",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.28, -0.025, 0.735)),
-    )
-    
-    block_3 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_3",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.22, 0.0, 0.735)),
-    )
-    
-    block_4 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_4",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, 0.0, 0.735)),
-    )
-    
-    block_5 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_5",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.28, 0.0, 0.735)),
-    )
-    
-    block_6 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_6",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.22, 0.025, 0.735)),
-    )
-    
-    block_7 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_7",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, 0.025, 0.735)),
-    )
-    
-    block_8 = RigidObjectCfg(
-        prim_path="{ENV_REGEX_NS}/Block_8",
-        spawn=sim_utils.CuboidCfg(
-            size=(0.025, 0.025, 0.025),
-            rigid_props=sim_utils.RigidBodyPropertiesCfg(kinematic_enabled=False),
-            mass_props=sim_utils.MassPropertiesCfg(mass=0.02),
-            collision_props=sim_utils.CollisionPropertiesCfg(),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.8, 0.2, 0.2)),
-            physics_material=sim_utils.RigidBodyMaterialCfg(static_friction=0.5, dynamic_friction=0.4),
-        ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.28, 0.025, 0.735)),
-    )
+    # All 9 blocks using helper function - positions calculated automatically
+    block_0 = create_block_cfg(0, BLOCK_POSITIONS[0])
+    block_1 = create_block_cfg(1, BLOCK_POSITIONS[1])
+    block_2 = create_block_cfg(2, BLOCK_POSITIONS[2])
+    block_3 = create_block_cfg(3, BLOCK_POSITIONS[3])
+    block_4 = create_block_cfg(4, BLOCK_POSITIONS[4])
+    block_5 = create_block_cfg(5, BLOCK_POSITIONS[5])
+    block_6 = create_block_cfg(6, BLOCK_POSITIONS[6])
+    block_7 = create_block_cfg(7, BLOCK_POSITIONS[7])
+    block_8 = create_block_cfg(8, BLOCK_POSITIONS[8])
 
     # lights
     light = AssetBaseCfg(
@@ -230,13 +147,10 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
 ##
 # MDP settings
 ##
-
-
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    # Will be set by child env cfg
     arm_action: mdp.JointPositionActionCfg = MISSING
 
 
@@ -248,18 +162,14 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # Robot joint state
         joint_pos = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel = ObsTerm(func=mdp.joint_vel_rel)
-
-        # Last action
         actions = ObsTerm(func=mdp.last_action)
 
         def __post_init__(self) -> None:
             self.enable_corruption = False
             self.concatenate_terms = True
 
-    # Observation groups
     policy: PolicyCfg = PolicyCfg()
 
 
@@ -274,15 +184,11 @@ class TerminationsCfg:
 class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):
     """Base configuration for the MyCobot 280 manipulation environment."""
 
-    # Scene settings
     scene: Mycobot2802SceneCfg = Mycobot2802SceneCfg(num_envs=1, env_spacing=2.0, replicate_physics=False)
-
-    # Basic settings
     observations: ObservationsCfg = ObservationsCfg()
     actions: ActionsCfg = ActionsCfg()
     terminations: TerminationsCfg = TerminationsCfg()
 
-    # No MDP managers for base config
     commands = None
     rewards = None
     events = None
@@ -290,20 +196,20 @@ class Mycobot2802EnvCfg(ManagerBasedRLEnvCfg):
 
     def __post_init__(self):
         """Post initialization."""
-        # general settings
         self.decimation = 2
         self.episode_length_s = 20.0
 
-        # viewer settings
+        # Viewer looks at tray
         self.viewer.eye = (1.5, 1.5, 1.0)
-        self.viewer.lookat = (0.4, 0.0, 0.5)
+        self.viewer.lookat = (TRAY_CENTER_X, TRAY_CENTER_Y, TRAY_CENTER_Z)
 
-        # simulation settings
         self.sim.dt = 1.0 / 120.0
         self.sim.render_interval = self.decimation
 
-        # physics settings
-        self.sim.physx.bounce_threshold_velocity = 0.2
+        # Enhanced physics for stability
+        self.sim.physx.bounce_threshold_velocity = 0.05
+        self.sim.physx.solver_position_iteration_count = 16
+        self.sim.physx.solver_velocity_iteration_count = 8
         self.sim.physx.gpu_found_lost_aggregate_pairs_capacity = 1024 * 1024 * 4
         self.sim.physx.gpu_total_aggregate_pairs_capacity = 16 * 1024
         self.sim.physx.friction_correlation_distance = 0.00625
