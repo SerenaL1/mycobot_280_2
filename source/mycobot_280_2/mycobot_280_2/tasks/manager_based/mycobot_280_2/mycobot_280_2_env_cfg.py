@@ -25,7 +25,7 @@ import os
 TRAY_USD_PATH = os.path.join(os.path.dirname(__file__), "assets", "tray.usd")
 
 # Tray configuration - CHANGE THESE THREE VALUES TO MOVE EVERYTHING!
-TRAY_CENTER_X = 0.25
+TRAY_CENTER_X = 0.22
 TRAY_CENTER_Y = 0.0
 TRAY_CENTER_Z = 0.005  # Relative to table surface (z=0.7 is table top)
 TRAY_BOTTOM_THICKNESS = 0.3 * 0.0254  # 0.3 inches from your Fusion model
@@ -186,7 +186,7 @@ class TerminationsCfg:
         func=mdp.tray_reached_goal,
         params={
             "asset_cfg": SceneEntityCfg("tray"),
-            "target_x": 0.35,  # 10cm forward from starting position (0.25)
+            "target_x": 0.3,  # 10cm forward from starting position (0.25)
             "threshold": 0.05,  # Within 5cm counts as success
         }
     )
