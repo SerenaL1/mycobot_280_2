@@ -8,6 +8,7 @@ from isaaclab.assets import ArticulationCfg, AssetBaseCfg, RigidObjectCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
 from isaaclab.managers import ObservationTermCfg as ObsTerm
+from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import FrameTransformerCfg
@@ -178,6 +179,17 @@ class TerminationsCfg:
     """Termination terms for the MDP."""
 
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    
+    # SUCCESS: Tray pushed forward by 10cm (from x=0.25 to x=0.35)
+    # Demo is saved when tray reaches target position for 10 consecutive steps
+    success = DoneTerm(
+        func=mdp.tray_reached_goal,
+        params={
+            "asset_cfg": SceneEntityCfg("tray"),
+            "target_x": 0.35,  # 10cm forward from starting position (0.25)
+            "threshold": 0.05,  # Within 5cm counts as success
+        }
+    )
 
 
 @configclass

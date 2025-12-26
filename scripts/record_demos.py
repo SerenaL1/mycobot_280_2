@@ -118,6 +118,22 @@ from isaaclab.managers import DatasetExportMode
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils.parse_cfg import parse_env_cfg
 
+# =========================================================================
+# Add the source directory to sys.path and import mycobot_280_2 module
+# =========================================================================
+import sys
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+source_module_path = os.path.join(project_root, "source", "mycobot_280_2", "mycobot_280_2")
+
+if source_module_path not in sys.path:
+    sys.path.insert(0, source_module_path)
+    print(f"[INFO] Added to sys.path: {source_module_path}")
+
+import tasks.manager_based.mycobot_280_2  # noqa: F401
+print("[INFO] Successfully imported mycobot_280_2 task module")
+# =========================================================================
+
 # import logger
 logger = logging.getLogger(__name__)
 
@@ -456,7 +472,15 @@ def run_simulation_loop(
     with contextlib.suppress(KeyboardInterrupt) and torch.inference_mode():
         while simulation_app.is_running():
             # Get keyboard command
-            action = teleop_interface.advance()
+            raw_action = teleop_interface.advance()
+            
+            # FIXED: Handle action dimension mismatch (keyboard gives 7, MyCobot needs 6)
+            action_dim = env.action_space.shape[-1]
+            if raw_action.shape[-1] > action_dim:
+                action = raw_action[..., :action_dim]  # Remove gripper command
+            else:
+                action = raw_action
+            
             # Expand to batch dimension
             actions = action.repeat(env.num_envs, 1)
 
