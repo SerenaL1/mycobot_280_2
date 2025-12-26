@@ -25,17 +25,25 @@ import os
 TRAY_USD_PATH = os.path.join(os.path.dirname(__file__), "assets", "tray.usd")
 
 # Tray configuration - CHANGE THESE THREE VALUES TO MOVE EVERYTHING!
-TRAY_CENTER_X = 0.22
+TRAY_CENTER_X = 0.25
 TRAY_CENTER_Y = 0.0
 TRAY_CENTER_Z = 0.005  # Relative to table surface (z=0.7 is table top)
 TRAY_BOTTOM_THICKNESS = 0.3 * 0.0254  # 0.3 inches from your Fusion model
 TRAY_SIZE = 0.10  # 10cm x 10cm
+
+TRAY_PIVOT_OFFSET_X = TRAY_SIZE / 2
+TRAY_PIVOT_OFFSET_Y = TRAY_SIZE / 2
+
+# Spawn tray so its *center* lands at TRAY_CENTER_X/Y
+TRAY_SPAWN_X = TRAY_CENTER_X - TRAY_PIVOT_OFFSET_X
+TRAY_SPAWN_Y = TRAY_CENTER_Y - TRAY_PIVOT_OFFSET_Y
 
 # Block configuration
 BLOCK_SIZE = 1.0 * 0.0254  # 1 inch = 0.0254m
 BLOCK_GAP = 0.3 * 0.0254  # 0.3 inch gap between blocks
 BLOCK_SPACING = BLOCK_SIZE + BLOCK_GAP  # 1.3 inches center-to-center
 BLOCK_MASS = 0.02  # 20g
+
 
 # Calculate block z-position: sitting ON tray bottom
 # Just: tray_z + tray_bottom_thickness + half_block_height
@@ -119,7 +127,7 @@ class Mycobot2802SceneCfg(InteractiveSceneCfg):
     tray = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Tray",
         init_state=RigidObjectCfg.InitialStateCfg(
-            pos=(TRAY_CENTER_X, TRAY_CENTER_Y, TRAY_CENTER_Z)
+            pos=(TRAY_SPAWN_X, TRAY_SPAWN_Y, TRAY_CENTER_Z)
         ),
         spawn=UsdFileCfg(
             usd_path=TRAY_USD_PATH,
@@ -174,22 +182,24 @@ class ObservationsCfg:
     policy: PolicyCfg = PolicyCfg()
 
 
+
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
-
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
     
-    # SUCCESS: Tray pushed forward by 10cm (from x=0.25 to x=0.35)
-    # Demo is saved when tray reaches target position for 10 consecutive steps
+    # SUCCESS: Tray CENTER pushed forward by 10cm (from x=0.22 to x=0.32)
+    # Demo is saved when tray CENTER reaches target position for 10 consecutive steps
     success = DoneTerm(
         func=mdp.tray_reached_goal,
         params={
             "asset_cfg": SceneEntityCfg("tray"),
-            "target_x": 0.3,  # 10cm forward from starting position (0.25)
+            "target_x": 0.32,  # Tray CENTER target (start: 0.22, goal: 10cm forward = 0.32)
             "threshold": 0.05,  # Within 5cm counts as success
+            "tray_pivot_offset_x": TRAY_SIZE / 2,  # 0.05m offset from pivot to center
         }
     )
+
 
 
 @configclass
