@@ -11,8 +11,8 @@ from isaaclab.managers import SceneEntityCfg
 def tray_reached_goal(
     env: ManagerBasedRLEnv, 
     asset_cfg: SceneEntityCfg,
-    target_x: float = 0.32,  # Target CENTER position (not pivot)
-    threshold: float = 0.05,
+    target_x: float = 0.312,  # Target CENTER position (not pivot)
+    threshold: float = 0.001,
     tray_pivot_offset_x: float = 0.05  # Half of tray size (10cm/2 = 5cm)
 ) -> torch.Tensor:
     """Check if tray CENTER has reached the target x-position.

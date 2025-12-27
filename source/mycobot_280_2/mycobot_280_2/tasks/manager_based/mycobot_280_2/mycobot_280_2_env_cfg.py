@@ -194,8 +194,8 @@ class TerminationsCfg:
         func=mdp.tray_reached_goal,
         params={
             "asset_cfg": SceneEntityCfg("tray"),
-            "target_x": 0.32,  # Tray CENTER target (start: 0.22, goal: 10cm forward = 0.32)
-            "threshold": 0.05,  # Within 5cm counts as success
+            "target_x": 0.312,  # Tray CENTER target (start: 0.22, goal: 10cm forward = 0.32)
+            "threshold": 0.001,  # Within 5cm counts as success
             "tray_pivot_offset_x": TRAY_SIZE / 2,  # 0.05m offset from pivot to center
         }
     )
