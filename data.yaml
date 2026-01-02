@@ -1,0 +1,12 @@
+# /home/serena-liu/Desktop/yolotray/data.yaml
+
+# Paths are relative to this file or absolute
+train: ./images/train  # path to train images
+val: ./images/val      # path to val images
+# test: ./images/test  # (Optional) path to test images
+
+# Number of classes
+nc: 1
+
+# Class names in order (maps to class-id)
+names: ['tray']
