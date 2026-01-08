@@ -21,7 +21,7 @@ else:
     raise Exception("No MyCobot device found")
 
 
-mc = MyCobot280(arm_port, 1000000)  # 设置端口
+mc = MyCobot280(arm_port, 1000000)  # è®¾ç½®ç«¯å£
             
 np.set_printoptions(suppress=True, formatter={'float_kind': '{:.2f}'.format})
 
@@ -54,7 +54,7 @@ class camera_detect:
                 json.dump(self.EyesInHand_matrix.tolist(), f)
                 
             try:
-                # 复制文件到目标路径
+                # å¤å¶æä»¶å°ç®æ è·¯å¾
                 shutil.copy(filename, self.matrix_file_path)
                 print(f"File copied to {self.matrix_file_path}")
             except IOError as e:
@@ -74,20 +74,20 @@ class camera_detect:
             time.sleep(0.2)
     
     def camera_open(self):
-        self.camera.capture()  # 打开摄像头
+        self.camera.capture()  # æå¼€æåå¤´
 
-    # 获取物体坐标(相机系)
+    # è·åç©ä½åæ (ç¸æºç³»)
     def calc_markers_base_position(self, corners, ids):
         if len(corners) == 0:
             return []
-        rvecs, tvecs = solve_marker_pnp(corners, self.marker_size, self.mtx, self.dist)  # 通过二维码角点获取物体旋转向量和平移向量
+        rvecs, tvecs = solve_marker_pnp(corners, self.marker_size, self.mtx, self.dist)  # é€è¿äºç»´ç è§ç¹è·åç©ä½æè½¬åéåå¹³ç§»åé
         for i, tvec, rvec in zip(ids, tvecs, rvecs):
             tvec = tvec.squeeze().tolist()
             rvec = rvec.squeeze().tolist()
             rotvector = np.array([[rvec[0], rvec[1], rvec[2]]])
-            Rotation = cv2.Rodrigues(rotvector)[0]  # 将旋转向量转为旋转矩阵
-            Euler = CvtRotationMatrixToEulerAngle(Rotation)  # 将旋转矩阵转为欧拉角
-            target_coords = np.array([tvec[0], tvec[1], tvec[2], Euler[0], Euler[1], Euler[2]])  # 物体坐标(相机系)
+            Rotation = cv2.Rodrigues(rotvector)[0]  # å°æè½¬åéè½¬ä¸ºæè½¬ç©éµ
+            Euler = CvtRotationMatrixToEulerAngle(Rotation)  # å°æè½¬ç©éµè½¬ä¸ºæ¬§æè§
+            target_coords = np.array([tvec[0], tvec[1], tvec[2], Euler[0], Euler[1], Euler[2]])  # ç©ä½åæ (ç¸æºç³»)
         return target_coords
 
     
@@ -119,16 +119,16 @@ class camera_detect:
         
         return eyes_in_hand_matrix
 
-    # 读取Camera坐标（单次）
+    # è¯»åCameraåæ ï¼åæ¬¡ï¼
     def stag_identify(self):
-        self.camera.update_frame()  # 刷新相机界面
-        frame = self.camera.color_frame()  # 获取当前帧
-        (corners, ids, rejected_corners) = stag.detectMarkers(frame, 11)  # 获取画面中二维码的角度和id
-        # 绘制检测到的标记及其ID
+        self.camera.update_frame()  # å·æ°ç¸æºçé¢
+        frame = self.camera.color_frame()  # è·åå½åå¸§
+        (corners, ids, rejected_corners) = stag.detectMarkers(frame, 11)  # è·åç»é¢ä¸­äºç»´ç çè§åº¦åid
+        # ç»å¶æ£€æµå°çæ è®°åå¶ID
         stag.drawDetectedMarkers(frame, corners, ids)
-        # 绘制被拒绝的候选区域，颜色设为红色
+        # ç»å¶è¢«æç»çå€é€åºåï¼é¢è²è®¾ä¸ºçº¢è²
         stag.drawDetectedMarkers(frame, rejected_corners, border_color=(255, 0, 0))
-        marker_pos_pack = self.calc_markers_base_position(corners, ids)  # 获取物的坐标(相机系)
+        marker_pos_pack = self.calc_markers_base_position(corners, ids)  # è·åç©çåæ (ç¸æºç³»)
         if(len(marker_pos_pack) == 0):
             marker_pos_pack = self.stag_identify()
         # print("Camera coords = ", marker_pos_pack)
@@ -137,7 +137,7 @@ class camera_detect:
         return marker_pos_pack
 
     def Eyes_in_hand_calibration(self, ml):
-        ml.send_angles(self.origin_mycbot_level, 50)  # 移动到观测点
+        ml.send_angles(self.origin_mycbot_level, 50)  # ç§»å¨å°è§æµç¹
         time.sleep(5)
         print("movement complete")
      #   self.wait()
@@ -182,7 +182,7 @@ class camera_detect:
     def reg_get(self, ml):
         for i in range(50):
             Mc_all = self.stag_identify()
-        tbe_all = ml.get_coords() # 获取机械臂当前坐标
+        tbe_all = ml.get_coords() # è·åæºæ¢°èå½ååæ 
         while (tbe_all is None):
             tbe_all = ml.get_coords()
 
@@ -196,12 +196,12 @@ class camera_detect:
 if __name__ == "__main__":
     if mc.is_power_on()==0:
         mc.power_on()
-    camera_params = np.load("camera_params.npz")  # 相机配置文件
+    camera_params = np.load("camera_params.npz")  # ç¸æºéç½®æä»¶
     mtx, dist = camera_params["mtx"], camera_params["dist"]
     m = camera_detect(0, 32, mtx, dist)
     tool_len = 20
   #  mc.set_tool_reference([0, 0, tool_len, 0, 0, 0])
  #   mc.set_end_type(1)
 
-    m.Eyes_in_hand_calibration(mc)  #手眼标定
+    m.Eyes_in_hand_calibration(mc)  #æç¼æ å®
     

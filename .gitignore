@@ -1,0 +1,19 @@
+
+# local envs
+yolo_env/
+labelImage_env/
+.venv/
+__pycache__/
+*.pyc
+
+
+# Python envs
+yolo_env/
+.venv/
+venv/
+__pycache__/
+
+# ROS artifacts
+build/
+install/
+log/
